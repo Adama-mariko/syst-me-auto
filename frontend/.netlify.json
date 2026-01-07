@@ -1,0 +1,7 @@
+{
+  "buildCommand": "npm run build",
+  "buildPublishDirectory": "dist/frontend/browser",
+  "env": {
+    "NG_BUILD_ENVIRONMENT": "production"
+  }
+}
