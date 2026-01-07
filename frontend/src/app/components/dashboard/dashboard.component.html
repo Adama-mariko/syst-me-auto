@@ -54,12 +54,12 @@
           <i class="bi bi-download"></i> Exporter
         </button>
         <ul class="dropdown-menu">
-          <li><a class="dropdown-item" href="http://localhost:5000/api/reports/export/pdf" target="_blank"><i
-                class="bi bi-file-pdf text-danger me-2"></i>PDF</a></li>
-          <li><a class="dropdown-item" href="http://localhost:5000/api/reports/export/excel" target="_blank"><i
-                class="bi bi-file-excel text-success me-2"></i>Excel</a></li>
-          <li><a class="dropdown-item" href="http://localhost:5000/api/reports/export/word" target="_blank"><i
-                class="bi bi-file-word text-primary me-2"></i>Word</a></li>
+          <li><button class="dropdown-item" (click)="downloadCurrentReport('pdf')"><i
+                class="bi bi-file-pdf text-danger me-2"></i>PDF</button></li>
+          <li><button class="dropdown-item" (click)="downloadCurrentReport('excel')"><i
+                class="bi bi-file-excel text-success me-2"></i>Excel</button></li>
+          <li><button class="dropdown-item" (click)="downloadCurrentReport('word')"><i
+                class="bi bi-file-word text-primary me-2"></i>Word</button></li>
         </ul>
       </div>
       <a routerLink="/requests/new" class="btn btn-primary text-nowrap">

@@ -3,12 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, Subject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Request } from '../models/request.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class RequestService {
-  private apiUrl = this.resolveApiUrl();
+  private apiUrl = environment.apiUrl;
   private refresh$ = new Subject<void>();
 
   constructor(private http: HttpClient) { }
@@ -20,44 +21,47 @@ export class RequestService {
         return stored.endsWith('/api') ? stored : `${stored}/api`;
       }
     } catch (_) {}
-    if (location.hostname !== 'localhost') {
-      return 'http://localhost:5000/api';
-    }
-    return 'http://localhost:5000/api';
+    return this.apiUrl;
   }
 
   getRequests(): Observable<Request[]> {
-    return this.http.get<Request[]>(`${this.apiUrl}/requests`);
+    const url = this.resolveApiUrl();
+    return this.http.get<Request[]>(`${url}/requests`);
   }
 
   getRequest(id: number): Observable<Request> {
-    return this.http.get<Request>(`${this.apiUrl}/requests/${id}`);
+    const url = this.resolveApiUrl();
+    return this.http.get<Request>(`${url}/requests/${id}`);
   }
 
   createRequest(request: Request): Observable<Request> {
-    return this.http.post<Request>(`${this.apiUrl}/requests`, request).pipe(
+    const url = this.resolveApiUrl();
+    return this.http.post<Request>(`${url}/requests`, request).pipe(
       tap(() => this.refresh$.next())
     );
   }
 
   updateRequest(id: number, request: Partial<Request>): Observable<Request> {
-    return this.http.put<Request>(`${this.apiUrl}/requests/${id}`, request).pipe(
+    const url = this.resolveApiUrl();
+    return this.http.put<Request>(`${url}/requests/${id}`, request).pipe(
       tap(() => this.refresh$.next())
     );
   }
 
   deleteRequest(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/requests/${id}`).pipe(
+    const url = this.resolveApiUrl();
+    return this.http.delete(`${url}/requests/${id}`).pipe(
       tap(() => this.refresh$.next())
     );
   }
 
   downloadReport(format: string, status?: string): void {
-    let url = `${this.apiUrl}/reports/export/${format}`;
+    const url = this.resolveApiUrl();
+    let reportUrl = `${url}/reports/export/${format}`;
     if (status) {
-      url += `?status=${status}`;
+      reportUrl += `?status=${status}`;
     }
-    window.open(url, '_blank');
+    window.open(reportUrl, '_blank');
   }
 
   onChanges(): Observable<void> {

@@ -88,4 +88,9 @@ export class DashboardComponent implements OnInit {
     if (!req.deadline) return false;
     return new Date(req.deadline) < new Date();
   }
+
+  downloadCurrentReport(format: string): void {
+    const status = this.selectedStatus !== 'Tous' ? this.selectedStatus : undefined;
+    this.requestService.downloadReport(format, status);
+  }
 }
