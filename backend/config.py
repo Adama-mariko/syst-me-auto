@@ -1,4 +1,8 @@
 import os
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement depuis .env
+load_dotenv()
 
 class Config:
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -11,4 +15,12 @@ class Config:
         SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(BASE_DIR, 'app.db')
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SECRET_KEY = os.getenv('SECRET_KEY', 'votre_cle_secrete_tres_securisee')
+    SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+    
+    # CORS Configuration
+    ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:4200').split(',')
+    
+    # Environment
+    ENVIRONMENT = os.getenv('FLASK_ENV', 'development')
+    DEBUG = os.getenv('FLASK_DEBUG', 'False') == 'True'
+

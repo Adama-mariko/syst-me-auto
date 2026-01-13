@@ -68,6 +68,14 @@
     </div>
   </div>
   <div class="card-body p-0">
+    <div *ngIf="errorMessage" class="alert alert-warning m-3 d-flex align-items-center justify-content-between gap-3">
+      <div>{{ errorMessage }}</div>
+      <div class="input-group" style="max-width: 420px;">
+        <span class="input-group-text"><i class="bi bi-plug"></i></span>
+        <input type="text" class="form-control" placeholder="https://votre-backend.exemple" [(ngModel)]="apiInput">
+        <button class="btn btn-outline-primary" (click)="saveApiUrl()">Enregistrer</button>
+      </div>
+    </div>
     <div *ngIf="loading" class="p-3 text-center">
       <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Chargement...</span></div>
     </div>

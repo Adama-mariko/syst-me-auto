@@ -4,6 +4,7 @@ import { Observable, Subject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Request } from '../models/request.model';
 import { environment } from '../../environments/environment';
+import { MockRequestService } from './mock-request.service';
 
 @Injectable({
   providedIn: 'root'
@@ -11,11 +12,19 @@ import { environment } from '../../environments/environment';
 export class RequestService {
   private apiUrl = environment.apiUrl;
   private refresh$ = new Subject<void>();
+  private useMock = !!(environment as any).useMock;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private mock: MockRequestService) { }
 
   private resolveApiUrl(): string {
     try {
+      const params = new URLSearchParams(location.search);
+      const paramApi = params.get('api');
+      if (paramApi && paramApi.startsWith('http')) {
+        const normalizedParam = paramApi.endsWith('/api') ? paramApi : `${paramApi}/api`;
+        localStorage.setItem('API_URL', normalizedParam);
+        return normalizedParam;
+      }
       const stored = localStorage.getItem('API_URL');
       if (stored && stored.startsWith('http')) {
         return stored.endsWith('/api') ? stored : `${stored}/api`;
@@ -25,16 +34,25 @@ export class RequestService {
   }
 
   getRequests(): Observable<Request[]> {
+    if (this.useMock) {
+      return this.mock.getRequests();
+    }
     const url = this.resolveApiUrl();
     return this.http.get<Request[]>(`${url}/requests`);
   }
 
   getRequest(id: number): Observable<Request> {
+    if (this.useMock) {
+      return this.mock.getRequest(id);
+    }
     const url = this.resolveApiUrl();
     return this.http.get<Request>(`${url}/requests/${id}`);
   }
 
   createRequest(request: Request): Observable<Request> {
+    if (this.useMock) {
+      return this.mock.createRequest(request);
+    }
     const url = this.resolveApiUrl();
     return this.http.post<Request>(`${url}/requests`, request).pipe(
       tap(() => this.refresh$.next())
@@ -42,6 +60,9 @@ export class RequestService {
   }
 
   updateRequest(id: number, request: Partial<Request>): Observable<Request> {
+    if (this.useMock) {
+      return this.mock.updateRequest(id, request);
+    }
     const url = this.resolveApiUrl();
     return this.http.put<Request>(`${url}/requests/${id}`, request).pipe(
       tap(() => this.refresh$.next())
@@ -49,6 +70,9 @@ export class RequestService {
   }
 
   deleteRequest(id: number): Observable<any> {
+    if (this.useMock) {
+      return this.mock.deleteRequest(id);
+    }
     const url = this.resolveApiUrl();
     return this.http.delete(`${url}/requests/${id}`).pipe(
       tap(() => this.refresh$.next())
@@ -56,6 +80,10 @@ export class RequestService {
   }
 
   downloadReport(format: string, status?: string): void {
+    if (this.useMock) {
+      this.mock.downloadReport(format, status);
+      return;
+    }
     const url = this.resolveApiUrl();
     let reportUrl = `${url}/reports/export/${format}`;
     if (status) {

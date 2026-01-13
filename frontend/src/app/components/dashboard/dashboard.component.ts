@@ -19,6 +19,8 @@ export class DashboardComponent implements OnInit {
   selectedStatus: string = 'Tous';
   statuses = ['Tous', 'En attente', 'En cours', 'Résolu', 'Clôturé'];
   loading: boolean = false;
+  errorMessage: string = '';
+  apiInput: string = '';
 
   totalRequests: number = 0;
   pendingRequests: number = 0;
@@ -36,15 +38,33 @@ export class DashboardComponent implements OnInit {
 
   loadRequests(): void {
     this.loading = true;
-    this.requestService.getRequests().subscribe(data => {
-      this.requests = data;
-      this.calculateStats();
-      this.filterRequests();
-      console.log('Requests loaded:', this.requests.length);
-      this.loading = false;
+    this.errorMessage = '';
+    this.requestService.getRequests().subscribe({
+      next: (data) => {
+        this.requests = data;
+        this.calculateStats();
+        this.filterRequests();
+        this.loading = false;
+      },
+      error: (_) => {
+        this.requests = [];
+        this.filteredRequests = [];
+        this.calculateStats();
+        this.loading = false;
+        this.errorMessage = 'Impossible de joindre l’API. Configurez l’URL via ?api= ou localStorage.';
+      }
     });
   }
 
+  saveApiUrl(): void {
+    const url = (this.apiInput || '').trim();
+    if (!url) return;
+    const normalized = url.endsWith('/api') ? url : `${url}/api`;
+    try {
+      localStorage.setItem('API_URL', normalized);
+    } catch (_) {}
+    this.loadRequests();
+  }
   calculateStats(): void {
     this.totalRequests = this.requests.length;
     this.pendingRequests = this.requests.filter(r => r.status === 'En attente').length;
@@ -79,6 +99,10 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  downloadCurrentReport(format: string): void {
+    this.requestService.downloadReport(format, this.selectedStatus === 'Tous' ? undefined : this.selectedStatus);
+  }
+
   getEcheanceDate(req: Request): string | undefined {
     return req.resolution_date || req.deadline;
   }
@@ -89,8 +113,4 @@ export class DashboardComponent implements OnInit {
     return new Date(req.deadline) < new Date();
   }
 
-  downloadCurrentReport(format: string): void {
-    const status = this.selectedStatus !== 'Tous' ? this.selectedStatus : undefined;
-    this.requestService.downloadReport(format, status);
-  }
 }
