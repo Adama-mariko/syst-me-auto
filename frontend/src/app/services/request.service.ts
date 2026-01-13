@@ -12,7 +12,7 @@ import { MockRequestService } from './mock-request.service';
 export class RequestService {
   private apiUrl = environment.apiUrl;
   private refresh$ = new Subject<void>();
-  private useMock = !!(environment as any).useMock;
+  private readonly MODE_KEY = 'USE_MOCK';
 
   constructor(private http: HttpClient, private mock: MockRequestService) { }
 
@@ -33,8 +33,29 @@ export class RequestService {
     return this.apiUrl;
   }
 
+  private isMock(): boolean {
+    try {
+      const params = new URLSearchParams(location.search);
+      const mode = (params.get('mode') || '').toLowerCase();
+      if (mode === 'api') return false;
+      if (mode === 'mock') return true;
+      const stored = localStorage.getItem(this.MODE_KEY);
+      if (stored === 'true' || stored === 'false') {
+        return stored === 'true';
+      }
+    } catch (_) {}
+    return !!(environment as any).useMock;
+  }
+
+  setMockMode(enabled: boolean): void {
+    try {
+      localStorage.setItem(this.MODE_KEY, enabled ? 'true' : 'false');
+    } catch (_) {}
+    this.refresh$.next();
+  }
+
   getRequests(): Observable<Request[]> {
-    if (this.useMock) {
+    if (this.isMock()) {
       return this.mock.getRequests();
     }
     const url = this.resolveApiUrl();
@@ -42,7 +63,7 @@ export class RequestService {
   }
 
   getRequest(id: number): Observable<Request> {
-    if (this.useMock) {
+    if (this.isMock()) {
       return this.mock.getRequest(id);
     }
     const url = this.resolveApiUrl();
@@ -50,7 +71,7 @@ export class RequestService {
   }
 
   createRequest(request: Request): Observable<Request> {
-    if (this.useMock) {
+    if (this.isMock()) {
       return this.mock.createRequest(request);
     }
     const url = this.resolveApiUrl();
@@ -60,7 +81,7 @@ export class RequestService {
   }
 
   updateRequest(id: number, request: Partial<Request>): Observable<Request> {
-    if (this.useMock) {
+    if (this.isMock()) {
       return this.mock.updateRequest(id, request);
     }
     const url = this.resolveApiUrl();
@@ -70,7 +91,7 @@ export class RequestService {
   }
 
   deleteRequest(id: number): Observable<any> {
-    if (this.useMock) {
+    if (this.isMock()) {
       return this.mock.deleteRequest(id);
     }
     const url = this.resolveApiUrl();
@@ -80,7 +101,7 @@ export class RequestService {
   }
 
   downloadReport(format: string, status?: string): void {
-    if (this.useMock) {
+    if (this.isMock()) {
       this.mock.downloadReport(format, status);
       return;
     }

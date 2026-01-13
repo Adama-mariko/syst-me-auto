@@ -65,6 +65,11 @@ export class DashboardComponent implements OnInit {
     } catch (_) {}
     this.loadRequests();
   }
+  
+  setMode(mock: boolean): void {
+    this.requestService.setMockMode(mock);
+    this.loadRequests();
+  }
   calculateStats(): void {
     this.totalRequests = this.requests.length;
     this.pendingRequests = this.requests.filter(r => r.status === 'En attente').length;

@@ -62,6 +62,16 @@
                 class="bi bi-file-word text-primary me-2"></i>Word</button></li>
         </ul>
       </div>
+      <div class="btn-group">
+        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"
+          aria-expanded="false">
+          <i class="bi bi-cloud"></i> Mode
+        </button>
+        <ul class="dropdown-menu">
+          <li><button class="dropdown-item" (click)="setMode(true)"><i class="bi bi-hdd"></i> Local (Mock)</button></li>
+          <li><button class="dropdown-item" (click)="setMode(false)"><i class="bi bi-cloud-check"></i> API (Cloud)</button></li>
+        </ul>
+      </div>
       <a routerLink="/requests/new" class="btn btn-primary text-nowrap">
         <i class="bi bi-plus-lg"></i> Nouvelle
       </a>
