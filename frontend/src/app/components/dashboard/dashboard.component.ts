@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { RequestService } from '../../services/request.service';
 import { Request } from '../../models/request.model';
 import { FormsModule } from '@angular/forms';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
@@ -39,18 +40,20 @@ export class DashboardComponent implements OnInit {
   loadRequests(): void {
     this.loading = true;
     this.errorMessage = '';
-    this.requestService.getRequests().subscribe({
+    this.requestService.getRequests().pipe(
+      finalize(() => {
+        this.loading = false;
+      })
+    ).subscribe({
       next: (data) => {
         this.requests = data;
         this.calculateStats();
         this.filterRequests();
-        this.loading = false;
       },
       error: (_) => {
         this.requests = [];
         this.filteredRequests = [];
         this.calculateStats();
-        this.loading = false;
         this.errorMessage = 'Impossible de joindre l’API. Configurez l’URL via ?api= ou localStorage.';
       }
     });
@@ -59,10 +62,17 @@ export class DashboardComponent implements OnInit {
   saveApiUrl(): void {
     const url = (this.apiInput || '').trim();
     if (!url) return;
-    const normalized = url.endsWith('/api') ? url : `${url}/api`;
-    try {
-      localStorage.setItem('API_URL', normalized);
-    } catch (_) {}
+    const isFirebase = url.includes('firebaseio.com') || url.includes('firebasedatabase.app');
+    if (isFirebase) {
+      try {
+        localStorage.setItem('FIREBASE_URL', url.replace(/\/+$/, ''));
+      } catch (_) {}
+    } else {
+      const normalized = url.endsWith('/api') ? url : `${url}/api`;
+      try {
+        localStorage.setItem('API_URL', normalized);
+      } catch (_) {}
+    }
     this.loadRequests();
   }
   

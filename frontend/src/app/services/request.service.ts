@@ -5,6 +5,7 @@ import { tap } from 'rxjs/operators';
 import { Request } from '../models/request.model';
 import { environment } from '../../environments/environment';
 import { MockRequestService } from './mock-request.service';
+import { CloudFirebaseService } from './cloud-firebase.service';
 
 @Injectable({
   providedIn: 'root'
@@ -13,13 +14,19 @@ export class RequestService {
   private apiUrl = environment.apiUrl;
   private refresh$ = new Subject<void>();
   private readonly MODE_KEY = 'USE_MOCK';
+  private readonly FIREBASE_KEY = 'FIREBASE_URL';
 
-  constructor(private http: HttpClient, private mock: MockRequestService) { }
+  constructor(private http: HttpClient, private mock: MockRequestService, private cloudFirebase: CloudFirebaseService) { }
 
   private resolveApiUrl(): string {
     try {
       const params = new URLSearchParams(location.search);
       const paramApi = params.get('api');
+      const provider = (params.get('provider') || '').toLowerCase();
+      if (provider === 'firebase' && paramApi && paramApi.startsWith('http')) {
+        localStorage.setItem(this.FIREBASE_KEY, paramApi.replace(/\/+$/, ''));
+        return paramApi.replace(/\/+$/, '');
+      }
       if (paramApi && paramApi.startsWith('http')) {
         const normalizedParam = paramApi.endsWith('/api') ? paramApi : `${paramApi}/api`;
         localStorage.setItem('API_URL', normalizedParam);
@@ -31,6 +38,29 @@ export class RequestService {
       }
     } catch (_) {}
     return this.apiUrl;
+  }
+
+  private resolveFirebaseUrl(): string | null {
+    try {
+      const params = new URLSearchParams(location.search);
+      const provider = (params.get('provider') || '').toLowerCase();
+      if (provider === 'firebase') {
+        const paramApi = params.get('api') || '';
+        if (paramApi.startsWith('http')) {
+          return paramApi.replace(/\/+$/, '');
+        }
+      }
+      const stored = localStorage.getItem(this.FIREBASE_KEY);
+      if (stored && stored.startsWith('http')) {
+        return stored.replace(/\/+$/, '');
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  private isFirebase(): boolean {
+    const url = this.resolveFirebaseUrl();
+    return !!url && (url.includes('firebaseio.com') || url.includes('firebasedatabase.app'));
   }
 
   private isMock(): boolean {
@@ -58,6 +88,10 @@ export class RequestService {
     if (this.isMock()) {
       return this.mock.getRequests();
     }
+    if (this.isFirebase()) {
+      const base = this.resolveFirebaseUrl()!;
+      return this.cloudFirebase.getRequests(base);
+    }
     const url = this.resolveApiUrl();
     return this.http.get<Request[]>(`${url}/requests`);
   }
@@ -66,6 +100,10 @@ export class RequestService {
     if (this.isMock()) {
       return this.mock.getRequest(id);
     }
+    if (this.isFirebase()) {
+      const base = this.resolveFirebaseUrl()!;
+      return this.cloudFirebase.getRequest(base, id);
+    }
     const url = this.resolveApiUrl();
     return this.http.get<Request>(`${url}/requests/${id}`);
   }
@@ -73,6 +111,12 @@ export class RequestService {
   createRequest(request: Request): Observable<Request> {
     if (this.isMock()) {
       return this.mock.createRequest(request);
+    }
+    if (this.isFirebase()) {
+      const base = this.resolveFirebaseUrl()!;
+      return this.cloudFirebase.createRequest(base, request).pipe(
+        tap(() => this.refresh$.next())
+      );
     }
     const url = this.resolveApiUrl();
     return this.http.post<Request>(`${url}/requests`, request).pipe(
@@ -84,6 +128,12 @@ export class RequestService {
     if (this.isMock()) {
       return this.mock.updateRequest(id, request);
     }
+    if (this.isFirebase()) {
+      const base = this.resolveFirebaseUrl()!;
+      return this.cloudFirebase.updateRequest(base, id, request).pipe(
+        tap(() => this.refresh$.next())
+      );
+    }
     const url = this.resolveApiUrl();
     return this.http.put<Request>(`${url}/requests/${id}`, request).pipe(
       tap(() => this.refresh$.next())
@@ -93,6 +143,12 @@ export class RequestService {
   deleteRequest(id: number): Observable<any> {
     if (this.isMock()) {
       return this.mock.deleteRequest(id);
+    }
+    if (this.isFirebase()) {
+      const base = this.resolveFirebaseUrl()!;
+      return this.cloudFirebase.deleteRequest(base, id).pipe(
+        tap(() => this.refresh$.next())
+      );
     }
     const url = this.resolveApiUrl();
     return this.http.delete(`${url}/requests/${id}`).pipe(
